@@ -1,1 +1,4 @@
 sync is 0b11111111
+bit == 0: outputs 1 then 0 → High to Low → IEEE Manchester 0
+
+bit == 1: outputs 0 then 1 → Low to High → IEEE Manchester 1

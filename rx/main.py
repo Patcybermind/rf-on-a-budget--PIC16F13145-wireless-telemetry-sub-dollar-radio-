@@ -44,8 +44,8 @@ def main():
                 
                 # Normalize to 0-15 range (adjust these values based on your signal levels)
                 # You may need to adjust min_db and max_db based on your environment
-                min_db = -18  # Minimum expected power level
-                max_db = -8 # Maximum expected power level
+                min_db = -25  # Minimum expected power level
+                max_db = -4 # Maximum expected power level
                 
                 normalized = (power_db - min_db) / (max_db - min_db)
                 normalized = np.clip(normalized, 0, 1)  # Clamp to 0-1 range
