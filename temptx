@@ -81,33 +81,50 @@ void __interrupt() INTERRUPT_InterruptManager (void)
         
         if (start_tx)
         {
-            uint8_t bit = (tx_data >> (7 - tx_bit_index)) & 0x01;
+            uint8_t bit;
+            if (sending_sync)
+            {
+                bit = (sync_sequence >> (7 - sync_bit_index)) & 0x01;
+            }
+            else
+            {
+                bit = (tx_data >> (7 - tx_bit_index)) & 0x01;
+            }
 
             if (half_bit_phase == 0)
             {
-                // First half: set based on current bit
                 CLBSWINL = (bit == 0) ? 1 : 0;
                 half_bit_phase = 1;
             }
             else
             {
-                // Second half: toggle for Manchester transition
                 CLBSWINL = ~CLBSWINL;
                 half_bit_phase = 0;
 
-                // Move to next bit
-                tx_bit_index++;
-
-                if (tx_bit_index >= 8)
+                if (sending_sync)
                 {
-                    tx_bit_index = 0;
-                    start_tx = 0;  // Transmission complete
+                    sync_bit_index++;
+                    if (sync_bit_index >= 8)
+                    {
+                        sync_bit_index = 0;
+                        sending_sync = 0;  // Done sending sync, start sending normal data
+                        tx_bit_index = 0;  // Reset data bit index
+                    }
+                }
+                else
+                {
+                    tx_bit_index++;
+                    if (tx_bit_index >= 8)
+                    {
+                        tx_bit_index = 0;
+                        start_tx = 0;  // Transmission complete
+                    }
                 }
             }
         }
         else
         {
-            CLBSWINL = 0;  // Ensure carrier is off when idle
+            CLBSWINL = 0;  // Ensure carrier off when idle
         }
         
     }
