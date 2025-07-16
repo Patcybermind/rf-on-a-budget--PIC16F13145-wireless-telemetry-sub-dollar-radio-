@@ -15,7 +15,7 @@ def smooth_signal(env, window_size=101):
 def threshold_signal(env):
     env_smooth = smooth_signal(env)
     base_thresh = np.median(env_smooth)  # median more robust than mean
-    thresh = base_thresh * 2.5
+    thresh = base_thresh * 2 # was 2.5
     print(f"Threshold: {thresh:.5f} (median: {base_thresh:.5f})")
     return env_smooth > thresh
 
@@ -102,3 +102,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# test is 0b10110010;
