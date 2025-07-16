@@ -1,284 +1,91 @@
 #!/usr/bin/env python3
 """
-RTL-SDR Manchester Decoder - Diagnostic Version
-Decodes Manchester-encoded OOK signals in real time
+RTL-SDR Power Monitor for 95.65 MHz
+Displays power levels as hexadecimal characters (0-F) in real-time
+32 characters per line, updates every 1/32 second
 """
 
 import numpy as np
-import threading
 import time
-import queue
-from collections import deque
 import sys
-
-try:
-    from rtlsdr import RtlSdr
-except ImportError:
-    print("ERROR: pyrtlsdr not installed. Install with: pip install pyrtlsdr")
-    sys.exit(1)
-
-class ManchesterDecoder:
-    def __init__(self, sdr_freq=433.92e6, sample_rate=2.4e6, bitrate=8):
-        self.sdr_freq = sdr_freq
-        self.sample_rate = sample_rate
-        self.bitrate = bitrate
-        self.samples_per_bit = int(sample_rate / bitrate)
-        self.sync_pattern = 0b11111111  # 8 bits sync pattern
-        
-        print(f"Samples per bit: {self.samples_per_bit}")
-        
-        # Initialize RTL-SDR
-        try:
-            self.sdr = RtlSdr()
-            self.sdr.sample_rate = sample_rate
-            self.sdr.center_freq = sdr_freq
-            self.sdr.gain = 'auto'
-            print(f"RTL-SDR initialized: freq={sdr_freq/1e6:.2f}MHz, rate={sample_rate/1e6:.1f}MHz")
-        except Exception as e:
-            print(f"ERROR: Failed to initialize RTL-SDR: {e}")
-            raise
-        
-        # Processing parameters
-        self.buffer_size = 4096
-        self.detection_threshold = 0.4  # Fixed threshold based on your data
-        self.sample_buffer = deque(maxlen=self.samples_per_bit * 50)
-        self.bit_buffer = deque(maxlen=200)  # Larger buffer for better sync detection
-        
-        # Statistics
-        self.sample_count = 0
-        self.bit_count = 0
-        self.energy_readings = deque(maxlen=100)
-        self.last_stats_time = time.time()
-        
-        # Threading
-        self.running = False
-        self.data_queue = queue.Queue()
-        
-    def start(self):
-        """Start the decoder"""
-        self.running = True
-        self.sdr_thread = threading.Thread(target=self._sdr_reader)
-        self.processing_thread = threading.Thread(target=self._signal_processor)
-        self.stats_thread = threading.Thread(target=self._stats_monitor)
-        
-        self.sdr_thread.daemon = True
-        self.processing_thread.daemon = True
-        self.stats_thread.daemon = True
-        
-        self.sdr_thread.start()
-        self.processing_thread.start()
-        self.stats_thread.start()
-        
-        print(f"Manchester decoder started on {self.sdr_freq/1e6:.2f} MHz")
-        print(f"Bitrate: {self.bitrate} bps, Sample rate: {self.sample_rate/1e6:.1f} MHz")
-        print("Listening for sync pattern 0xFF...")
-        print("Press Ctrl+C to stop")
-        
-    def stop(self):
-        """Stop the decoder"""
-        self.running = False
-        try:
-            self.sdr.close()
-        except:
-            pass
-        
-    def _sdr_reader(self):
-        """Read samples from RTL-SDR"""
-        print("SDR reader thread started")
-        try:
-            while self.running:
-                samples = self.sdr.read_samples(self.buffer_size)
-                if samples is not None and len(samples) > 0:
-                    self.data_queue.put(samples)
-                    self.sample_count += len(samples)
-        except Exception as e:
-            print(f"SDR reader error: {e}")
-            self.running = False
-            
-    def _signal_processor(self):
-        """Process incoming samples"""
-        print("Signal processor thread started")
-        
-        while self.running:
-            try:
-                # Get samples from queue with timeout
-                samples = self.data_queue.get(timeout=1.0)
-                
-                # Convert to magnitude (OOK detection)
-                magnitude = np.abs(samples)
-                
-                # Track energy statistics
-                current_energy = np.mean(magnitude)
-                max_energy = np.max(magnitude)
-                self.energy_readings.append(current_energy)
-                
-                # Add to sample buffer
-                self.sample_buffer.extend(magnitude)
-                
-                # Process available samples
-                self._process_samples()
-                
-            except queue.Empty:
-                continue
-            except Exception as e:
-                print(f"Signal processor error: {e}")
-                
-    def _process_samples(self):
-        """Process samples to extract bits"""
-        while len(self.sample_buffer) >= self.samples_per_bit:
-            # Take samples for one bit period
-            bit_samples = []
-            for _ in range(self.samples_per_bit):
-                if self.sample_buffer:
-                    bit_samples.append(self.sample_buffer.popleft())
-            
-            if len(bit_samples) == 0:
-                continue
-                
-            # Determine bit value based on energy
-            avg_energy = np.mean(bit_samples)
-            max_energy = np.max(bit_samples)
-            
-            # Use fixed threshold - no more auto-adjustment
-            bit_value = 1 if avg_energy > self.detection_threshold else 0
-            
-            # Add bit to buffer
-            self.bit_buffer.append(bit_value)
-            self.bit_count += 1
-            
-            # Check for sync pattern and decode
-            self._check_for_sync()
-            
-    def _check_for_sync(self):
-        """Check for sync pattern and decode following data"""
-        if len(self.bit_buffer) < 32:
-            return
-            
-        # Convert bit buffer to list for easier processing
-        bits = list(self.bit_buffer)
-        
-        # Look for sync pattern in Manchester encoding
-        # 0xFF = 11111111 in YOUR encoding becomes: 0101010101010101
-        # Your encoding: bit 0 → 1,0 and bit 1 → 0,1
-        sync_manchester = [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]
-        
-        # Also try partial sync matches in case of bit errors
-        partial_sync_patterns = [
-            [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],  # Full sync
-            [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],  # Inverted sync
-            [0,1,0,1,0,1,0,1,0,1,0,1,0,1],      # 14-bit partial
-            [1,0,1,0,1,0,1,0,1,0,1,0,1,0],      # 14-bit partial inverted
-        ]
-        
-        # Search for sync patterns
-        for pattern in partial_sync_patterns:
-            for i in range(len(bits) - len(pattern) + 1):
-                if bits[i:i+len(pattern)] == pattern:
-                    print(f"SYNC PATTERN FOUND at position {i}! Pattern: {''.join(map(str, pattern))}")
-                    
-                    # Extract data after sync
-                    data_start = i + len(pattern)
-                    if data_start + 16 <= len(bits):
-                        data_bits = bits[data_start:data_start+16]
-                        decoded_byte = self._decode_manchester(data_bits)
-                        
-                        if decoded_byte is not None:
-                            print(f"DECODED BYTE: 0x{decoded_byte:02X} ({decoded_byte}) '{chr(decoded_byte) if 32 <= decoded_byte <= 126 else '?'}'")
-                            
-                            # Clear processed bits
-                            for _ in range(data_start + 16):
-                                if self.bit_buffer:
-                                    self.bit_buffer.popleft()
-                            return
-                        else:
-                            print(f"Failed to decode data bits: {''.join(map(str, data_bits))}")
-                            
-        # Keep only recent bits to prevent buffer overflow
-        if len(self.bit_buffer) > 150:
-            self.bit_buffer.popleft()
-            
-    def _decode_manchester(self, manchester_bits):
-        """Decode Manchester encoded bits (YOUR encoding: bit 0 → 1,0 and bit 1 → 0,1)"""
-        if len(manchester_bits) != 16:
-            return None
-            
-        decoded = []
-        for i in range(0, len(manchester_bits), 2):
-            if i + 1 < len(manchester_bits):
-                pair = manchester_bits[i:i+2]
-                if pair == [1, 0]:
-                    decoded.append(0)  # Your encoding: 1,0 = bit 0
-                elif pair == [0, 1]:
-                    decoded.append(1)  # Your encoding: 0,1 = bit 1
-                else:
-                    return None
-                    
-        if len(decoded) == 8:
-            byte_value = 0
-            for bit in decoded:
-                byte_value = (byte_value << 1) | bit
-            return byte_value
-            
-        return None
-        
-    def _stats_monitor(self):
-        """Monitor and display statistics"""
-        while self.running:
-            time.sleep(2)
-            
-            if len(self.energy_readings) > 0:
-                current_avg = np.mean(list(self.energy_readings)[-25:])
-                current_max = np.max(list(self.energy_readings)[-25:])
-                current_min = np.min(list(self.energy_readings)[-25:])
-                
-                # Show recent bit pattern
-                recent_bits = list(self.bit_buffer)[-20:] if len(self.bit_buffer) >= 20 else list(self.bit_buffer)
-                bit_string = ''.join(map(str, recent_bits))
-                
-                print(f"Stats: Samples={self.sample_count}, Bits={self.bit_count}, "
-                      f"Energy: avg={current_avg:.4f}, max={current_max:.4f}, min={current_min:.4f}")
-                print(f"Recent bits: {bit_string}")
-                print(f"Queue size: {self.data_queue.qsize()}")
-                print(f"Using fixed threshold: {self.detection_threshold:.4f}")
-                print("-" * 50)
+from rtlsdr import RtlSdr
 
 def main():
-    """Main function"""
     # Configuration
-    FREQUENCY = 95.65e6  # Adjust to your frequency
-    SAMPLE_RATE = 2.4e6   # 2.4 MHz sample rate
-    BITRATE = 8           # 8 bits per second
+    frequency = 95.65e6  # 95.65 MHz
+    sample_rate = 2.048e6  # 2.048 MHz sample rate
+    gain = 0  # Automatic gain control
+    update_interval = 1/32  # 1/32 second
+    samples_per_read = int(sample_rate * update_interval)
     
-    print("RTL-SDR Manchester Decoder - Diagnostic Version")
-    print("=" * 50)
-    
+    # Initialize RTL-SDR
     try:
-        # Create and start decoder
-        decoder = ManchesterDecoder(
-            sdr_freq=FREQUENCY,
-            sample_rate=SAMPLE_RATE,
-            bitrate=BITRATE
-        )
+        sdr = RtlSdr()
+        sdr.sample_rate = sample_rate
+        sdr.center_freq = frequency
+        sdr.gain = gain
         
-        decoder.start()
+        print(f"RTL-SDR Power Monitor - {frequency/1e6:.2f} MHz")
+        print("Power levels: 0=lowest, F=highest")
+        print("Press Ctrl+C to stop\n")
         
-        # Keep running until interrupted
+        char_count = 0
+        
         while True:
             try:
-                time.sleep(1)
+                # Read samples from RTL-SDR
+                samples = sdr.read_samples(samples_per_read)
+                
+                # Calculate power (magnitude squared)
+                power = np.mean(np.abs(samples)**2)
+                
+                # Convert power to dB scale (with offset to avoid log(0))
+                power_db = 10 * np.log10(power + 1e-10)
+                
+                # Normalize to 0-15 range (adjust these values based on your signal levels)
+                # You may need to adjust min_db and max_db based on your environment
+                min_db = -18  # Minimum expected power level
+                max_db = -8 # Maximum expected power level
+                
+                normalized = (power_db - min_db) / (max_db - min_db)
+                normalized = np.clip(normalized, 0, 1)  # Clamp to 0-1 range
+                
+                # Convert to hex character (0-F)
+                hex_value = int(normalized * 15)
+                hex_char = format(hex_value, 'X')
+                if hex_value > 7:
+                    digital_char = '#'  # Use '1' for values above 7
+                else:
+                    digital_char = '_'
+                # Print character without newline
+                print(hex_char + digital_char, end='', flush=True)
+                char_count += 1
+                
+                # Start new line after 32 characters
+                if char_count >= 32:
+                    print()  # New line
+                    char_count = 0
+                
+                # Wait for next update
+                time.sleep(update_interval)
+                
             except KeyboardInterrupt:
-                print("\nStopping decoder...")
-                decoder.stop()
+                print("\n\nStopping...")
                 break
+            except Exception as e:
+                print(f"\nError reading samples: {e}")
+                time.sleep(0.1)
                 
     except Exception as e:
-        print(f"Error: {e}")
-        print("\nTroubleshooting:")
-        print("1. Make sure RTL-SDR is connected: lsusb | grep RTL")
-        print("2. Install pyrtlsdr: pip install pyrtlsdr")
-        print("3. Check if another program is using the RTL-SDR")
-        print("4. Try running with sudo if you get permission errors")
-        print("5. Verify your transmitter is working and on the correct frequency")
+        print(f"Error initializing RTL-SDR: {e}")
+        print("Make sure RTL-SDR is connected and rtl-sdr library is installed")
+        sys.exit(1)
+    
+    finally:
+        try:
+            sdr.close()
+        except:
+            pass
 
 if __name__ == "__main__":
     main()
