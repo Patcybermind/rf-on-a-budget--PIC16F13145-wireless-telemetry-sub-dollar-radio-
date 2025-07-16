@@ -15,7 +15,7 @@ def smooth_signal(env, window_size=101):
 
 def threshold_signal(env):
     env_smooth = smooth_signal(env)
-    thresh = max(np.mean(env_smooth) * 1, 0.05)
+    thresh = max(np.mean(env_smooth) * 1.5, 0.05)
     return env_smooth > thresh
 
 def find_edges(digital_signal):
@@ -25,19 +25,19 @@ def decode_manchester(samples):
     env = envelope(samples)
     digital = threshold_signal(env)
     edges = find_edges(digital)
-    
+
     bits = []
     i = 0
     bit_samples = SAMPLES_PER_BIT
 
     while i < len(edges) - 1:
-        interval = edges[i+1] - edges[i]
-        if abs(interval - bit_samples//2) < bit_samples//4:
-            first_level = digital[edges[i]]
-            second_level = digital[edges[i]+1]
-            if first_level == 0 and second_level == 1:
+        interval = edges[i + 1] - edges[i]
+        if abs(interval - bit_samples // 2) < bit_samples // 4:
+            first = digital[edges[i]]
+            second = digital[edges[i + 1]]
+            if first == 0 and second == 1:
                 bits.append(1)
-            elif first_level == 1 and second_level == 0:
+            elif first == 1 and second == 0:
                 bits.append(0)
             else:
                 bits.append(None)
@@ -55,17 +55,18 @@ def bits_to_byte(bits):
         val = (val << 1) | bit
     return val
 
-def find_sync_and_decode(bits):
+def find_sync_and_decode(bits_buffer):
     i = 0
-    while i <= len(bits) - 16:
-        if bits[i:i+8] == SYNC_PATTERN:
-            payload = bits[i+8:i+16]
-            byte = bits_to_byte(payload)
+    while i <= len(bits_buffer) - 16:
+        if bits_buffer[i:i + 8] == SYNC_PATTERN:
+            byte_bits = bits_buffer[i + 8:i + 16]
+            byte = bits_to_byte(byte_bits)
             if byte is not None:
                 print(f"Decoded byte: 0b{byte:08b} ({byte})")
-            i += 16
+            i += 16  # jump over sync + byte
         else:
             i += 1
+    return bits_buffer[-16:]  # keep last few bits to detect future syncs
 
 def main():
     sdr = RtlSdr()
@@ -84,10 +85,10 @@ def main():
             bits = decode_manchester(samples)
             bits_buffer.extend(bits)
 
-            # Search for sync pattern and decode immediately after
-            find_sync_and_decode(bits_buffer)
+            # Sync + decode logic
+            bits_buffer = find_sync_and_decode(bits_buffer)
 
-            # Avoid growing buffer indefinitely
+            # Avoid memory overload
             if len(bits_buffer) > 2000:
                 bits_buffer = bits_buffer[-2000:]
 
