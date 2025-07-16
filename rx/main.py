@@ -3,7 +3,7 @@ from rtlsdr import RtlSdr
 
 CENTER_FREQ = 95.65e6
 SAMPLE_RATE = 2.4e6
-BITRATE = 8
+BITRATE = 32
 SAMPLES_PER_BIT = int(SAMPLE_RATE / BITRATE)
 SYNC_PATTERN = [1, 1, 1, 1, 1, 1, 1, 1]  # 0b11111111
 
