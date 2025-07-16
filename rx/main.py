@@ -40,9 +40,9 @@ class ManchesterDecoder:
         
         # Processing parameters
         self.buffer_size = 4096
-        self.detection_threshold = 0.01  # Very low threshold initially
+        self.detection_threshold = 0.4  # Fixed threshold based on your data
         self.sample_buffer = deque(maxlen=self.samples_per_bit * 50)
-        self.bit_buffer = deque(maxlen=100)
+        self.bit_buffer = deque(maxlen=200)  # Larger buffer for better sync detection
         
         # Statistics
         self.sample_count = 0
@@ -139,15 +139,8 @@ class ManchesterDecoder:
             avg_energy = np.mean(bit_samples)
             max_energy = np.max(bit_samples)
             
-            # Adaptive threshold based on recent energy readings
-            if len(self.energy_readings) > 10:
-                recent_avg = np.mean(list(self.energy_readings)[-50:])
-                recent_max = np.max(list(self.energy_readings)[-50:])
-                adaptive_threshold = recent_avg + (recent_max - recent_avg) * 0.3
-            else:
-                adaptive_threshold = self.detection_threshold
-                
-            bit_value = 1 if avg_energy > adaptive_threshold else 0
+            # Use fixed threshold - no more auto-adjustment
+            bit_value = 1 if avg_energy > self.detection_threshold else 0
             
             # Add bit to buffer
             self.bit_buffer.append(bit_value)
@@ -169,28 +162,39 @@ class ManchesterDecoder:
         # Your encoding: bit 0 → 1,0 and bit 1 → 0,1
         sync_manchester = [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]
         
-        # Search for sync pattern
-        for i in range(len(bits) - len(sync_manchester) + 1):
-            if bits[i:i+len(sync_manchester)] == sync_manchester:
-                print(f"SYNC FOUND at position {i}!")
-                
-                # Extract data after sync
-                data_start = i + len(sync_manchester)
-                if data_start + 16 <= len(bits):
-                    data_bits = bits[data_start:data_start+16]
-                    decoded_byte = self._decode_manchester(data_bits)
+        # Also try partial sync matches in case of bit errors
+        partial_sync_patterns = [
+            [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],  # Full sync
+            [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],  # Inverted sync
+            [0,1,0,1,0,1,0,1,0,1,0,1,0,1],      # 14-bit partial
+            [1,0,1,0,1,0,1,0,1,0,1,0,1,0],      # 14-bit partial inverted
+        ]
+        
+        # Search for sync patterns
+        for pattern in partial_sync_patterns:
+            for i in range(len(bits) - len(pattern) + 1):
+                if bits[i:i+len(pattern)] == pattern:
+                    print(f"SYNC PATTERN FOUND at position {i}! Pattern: {''.join(map(str, pattern))}")
                     
-                    if decoded_byte is not None:
-                        print(f"DECODED BYTE: 0x{decoded_byte:02X} ({decoded_byte}) '{chr(decoded_byte) if 32 <= decoded_byte <= 126 else '?'}'")
+                    # Extract data after sync
+                    data_start = i + len(pattern)
+                    if data_start + 16 <= len(bits):
+                        data_bits = bits[data_start:data_start+16]
+                        decoded_byte = self._decode_manchester(data_bits)
                         
-                        # Clear processed bits
-                        for _ in range(data_start + 16):
-                            if self.bit_buffer:
-                                self.bit_buffer.popleft()
-                        return
-                        
+                        if decoded_byte is not None:
+                            print(f"DECODED BYTE: 0x{decoded_byte:02X} ({decoded_byte}) '{chr(decoded_byte) if 32 <= decoded_byte <= 126 else '?'}'")
+                            
+                            # Clear processed bits
+                            for _ in range(data_start + 16):
+                                if self.bit_buffer:
+                                    self.bit_buffer.popleft()
+                            return
+                        else:
+                            print(f"Failed to decode data bits: {''.join(map(str, data_bits))}")
+                            
         # Keep only recent bits to prevent buffer overflow
-        if len(self.bit_buffer) > 80:
+        if len(self.bit_buffer) > 150:
             self.bit_buffer.popleft()
             
     def _decode_manchester(self, manchester_bits):
@@ -235,17 +239,7 @@ class ManchesterDecoder:
                       f"Energy: avg={current_avg:.4f}, max={current_max:.4f}, min={current_min:.4f}")
                 print(f"Recent bits: {bit_string}")
                 print(f"Queue size: {self.data_queue.qsize()}")
-                
-                # Auto-adjust threshold suggestion
-                if current_max > 0.001:  # If we're getting some signal
-                    suggested_threshold = current_min + (current_max - current_min) * 0.3
-                    print(f"Suggested threshold: {suggested_threshold:.4f} (current: {self.detection_threshold:.4f})")
-                    
-                    # Auto-adjust if the difference is significant
-                    if abs(suggested_threshold - self.detection_threshold) > 0.001:
-                        self.detection_threshold = suggested_threshold
-                        print(f"Auto-adjusted threshold to: {self.detection_threshold:.4f}")
-                
+                print(f"Using fixed threshold: {self.detection_threshold:.4f}")
                 print("-" * 50)
 
 def main():
