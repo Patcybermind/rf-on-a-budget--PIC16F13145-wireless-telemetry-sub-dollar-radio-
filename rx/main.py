@@ -3,9 +3,9 @@ from rtlsdr import RtlSdr
 
 CENTER_FREQ = 95.65e6
 SAMPLE_RATE = 2.4e6
-BITRATE = 8  # bits per second
+BITRATE = 8
 SAMPLES_PER_BIT = int(SAMPLE_RATE / BITRATE)
-SYNC_SEQ = [1,0,1,1,0,0,1,0]  # your sync sequence
+SYNC_PATTERN = [1, 0, 1, 1, 0, 0, 1, 0]  # 0b10110010
 
 def envelope(samples):
     return np.abs(samples)
@@ -15,20 +15,17 @@ def smooth_signal(env, window_size=101):
 
 def threshold_signal(env):
     env_smooth = smooth_signal(env)
-    base_thresh = np.mean(env_smooth)
-    thresh = max(base_thresh * 3, 0.05)  # heuristic threshold
-    # print(f"Threshold: {thresh:.4f} (mean: {base_thresh:.4f})")  # uncomment for debugging
+    thresh = max(np.mean(env_smooth) * 3, 0.05)
     return env_smooth > thresh
 
 def find_edges(digital_signal):
-    edges = np.where(np.diff(digital_signal.astype(int)) != 0)[0]
-    return edges
+    return np.where(np.diff(digital_signal.astype(int)) != 0)[0]
 
 def decode_manchester(samples):
     env = envelope(samples)
     digital = threshold_signal(env)
     edges = find_edges(digital)
-
+    
     bits = []
     i = 0
     bit_samples = SAMPLES_PER_BIT
@@ -38,8 +35,6 @@ def decode_manchester(samples):
         if abs(interval - bit_samples//2) < bit_samples//4:
             first_level = digital[edges[i]]
             second_level = digital[edges[i]+1]
-
-            # Manchester decoding (low->high = 1, high->low = 0)
             if first_level == 0 and second_level == 1:
                 bits.append(1)
             elif first_level == 1 and second_level == 0:
@@ -53,19 +48,24 @@ def decode_manchester(samples):
     return bits
 
 def bits_to_byte(bits):
-    bits = bits[:8]
-    if len(bits) < 8 or None in bits:
+    if len(bits) != 8 or None in bits:
         return None
     val = 0
     for bit in bits:
         val = (val << 1) | bit
     return val
 
-def find_sync(bits_buffer):
-    for i in range(len(bits_buffer) - len(SYNC_SEQ) + 1):
-        if bits_buffer[i:i+len(SYNC_SEQ)] == SYNC_SEQ:
-            return i
-    return -1
+def find_sync_and_decode(bits):
+    i = 0
+    while i <= len(bits) - 16:
+        if bits[i:i+8] == SYNC_PATTERN:
+            payload = bits[i+8:i+16]
+            byte = bits_to_byte(payload)
+            if byte is not None:
+                print(f"Decoded byte: 0b{byte:08b} ({byte})")
+            i += 16
+        else:
+            i += 1
 
 def main():
     sdr = RtlSdr()
@@ -75,33 +75,21 @@ def main():
 
     print(f"Listening at {CENTER_FREQ/1e6} MHz, {BITRATE} bps Manchester decoding with sync")
 
-    bits_buffer = []
-    synced = False
-    buffer_size = 262144
-
     try:
+        buffer_size = 262144
+        bits_buffer = []
+
         while True:
             samples = sdr.read_samples(buffer_size)
             bits = decode_manchester(samples)
             bits_buffer.extend(bits)
 
-            if not synced:
-                idx = find_sync(bits_buffer)
-                if idx >= 0:
-                    print(f"Sync found at bit index {idx}")
-                    bits_buffer = bits_buffer[idx:]
-                    synced = True
-                else:
-                    bits_buffer = bits_buffer[-len(SYNC_SEQ):]
-                    continue
+            # Search for sync pattern and decode immediately after
+            find_sync_and_decode(bits_buffer)
 
-            while len(bits_buffer) >= 8:
-                byte = bits_to_byte(bits_buffer[:8])
-                if byte is not None:
-                    print(f"Decoded byte: 0b{byte:08b} ({byte}) --------------------------------")
-                else:
-                    print("Invalid bits:", bits_buffer[:8])
-                bits_buffer = bits_buffer[8:]
+            # Avoid growing buffer indefinitely
+            if len(bits_buffer) > 2000:
+                bits_buffer = bits_buffer[-2000:]
 
     except KeyboardInterrupt:
         print("Stopped by user")
