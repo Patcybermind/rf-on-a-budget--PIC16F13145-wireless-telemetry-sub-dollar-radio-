@@ -5,7 +5,7 @@ CENTER_FREQ = 95.65e6
 SAMPLE_RATE = 2.4e6
 BITRATE = 8
 SAMPLES_PER_BIT = int(SAMPLE_RATE / BITRATE)
-SYNC_PATTERN = [1, 0, 1, 1, 0, 0, 1, 0]  # 0b10110010
+SYNC_PATTERN = [1, 1, 1, 1, 1, 1, 1, 1]  # 0b11111111
 
 def envelope(samples):
     return np.abs(samples)
@@ -15,7 +15,7 @@ def smooth_signal(env, window_size=101):
 
 def threshold_signal(env):
     env_smooth = smooth_signal(env)
-    thresh = max(np.mean(env_smooth) * 3, 0.05)
+    thresh = max(np.mean(env_smooth) * 1, 0.05)
     return env_smooth > thresh
 
 def find_edges(digital_signal):
