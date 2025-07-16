@@ -179,7 +179,7 @@ class ManchesterDecoder:
 def main():
     """Main function"""
     # Configuration
-    FREQUENCY = 433.92e6  # Adjust to your frequency
+    FREQUENCY = 95.6e6  # Adjust to your frequency
     SAMPLE_RATE = 2.4e6   # 2.4 MHz sample rate
     BITRATE = 8           # 8 bits per second
     
