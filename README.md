@@ -1,4 +1,4 @@
-a# Wireless on a budget
+# Wireless on a budget
 
 This project was built for microchip's configurable logic block design challenge and was published [here](https://maker.pro/configurable-logic-block/projects/wireless-on-a-budget)
 
