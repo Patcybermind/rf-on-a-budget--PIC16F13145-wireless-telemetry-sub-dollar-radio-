@@ -1,0 +1,121 @@
+
+
+Microchip MPLAB XC8 Assembler V3.00 build 20241204225717 
+                                                                                                           Wed Jul 16 22:03:42 2025
+
+
+     1                           	processor	16F13145
+     2                           	pagewidth 132
+     3                           	psect	clb_config,global,class=STRCODE,space=0,split=0,delta=2,noexec
+     4                           
+     5                           	psect	clb_config
+     6     0099                     _start_clb_config:
+     7     0099  0000               	dw	0
+     8     009A  0000               	dw	0
+     9     009B  0000               	dw	0
+    10     009C  0000               	dw	0
+    11     009D  0000               	dw	0
+    12     009E  0146               	dw	326
+    13     009F  2814               	dw	10260
+    14     00A0  0140               	dw	320
+    15     00A1  0000               	dw	0
+    16     00A2  0000               	dw	0
+    17     00A3  0000               	dw	0
+    18     00A4  0000               	dw	0
+    19     00A5  0000               	dw	0
+    20     00A6  0000               	dw	0
+    21     00A7  0000               	dw	0
+    22     00A8  0000               	dw	0
+    23     00A9  1D0E               	dw	7438
+    24     00AA  08E0               	dw	2272
+    25     00AB  0E00               	dw	3584
+    26     00AC  0000               	dw	0
+    27     00AD  0000               	dw	0
+    28     00AE  0000               	dw	0
+    29     00AF  0000               	dw	0
+    30     00B0  0000               	dw	0
+    31     00B1  0000               	dw	0
+    32     00B2  0000               	dw	0
+    33     00B3  000A               	dw	10
+    34     00B4  1940               	dw	6464
+    35     00B5  280A               	dw	10250
+    36     00B6  0000               	dw	0
+    37     00B7  0000               	dw	0
+    38     00B8  0000               	dw	0
+    39     00B9  0000               	dw	0
+    40     00BA  0000               	dw	0
+    41     00BB  0000               	dw	0
+    42     00BC  0000               	dw	0
+    43     00BD  0000               	dw	0
+    44     00BE  0000               	dw	0
+    45     00BF  0000               	dw	0
+    46     00C0  0000               	dw	0
+    47     00C1  0000               	dw	0
+    48     00C2  0000               	dw	0
+    49     00C3  0000               	dw	0
+    50     00C4  0000               	dw	0
+    51     00C5  0000               	dw	0
+    52     00C6  0000               	dw	0
+    53     00C7  0000               	dw	0
+    54     00C8  0000               	dw	0
+    55     00C9  0000               	dw	0
+    56     00CA  0000               	dw	0
+    57     00CB  0000               	dw	0
+    58     00CC  0000               	dw	0
+    59     00CD  0000               	dw	0
+    60     00CE  0000               	dw	0
+    61     00CF  0000               	dw	0
+    62     00D0  0000               	dw	0
+    63     00D1  0000               	dw	0
+    64     00D2  0000               	dw	0
+    65     00D3  0000               	dw	0
+    66     00D4  0000               	dw	0
+    67     00D5  0000               	dw	0
+    68     00D6  0000               	dw	0
+    69     00D7  0000               	dw	0
+    70     00D8  0000               	dw	0
+    71     00D9  0000               	dw	0
+    72     00DA  0000               	dw	0
+    73     00DB  0000               	dw	0
+    74     00DC  0000               	dw	0
+    75     00DD  0000               	dw	0
+    76     00DE  0000               	dw	0
+    77     00DF  0000               	dw	0
+    78     00E0  0000               	dw	0
+    79     00E1  0000               	dw	0
+    80     00E2  0000               	dw	0
+    81     00E3  0000               	dw	0
+    82     00E4  0000               	dw	0
+    83     00E5  0000               	dw	0
+    84     00E6  0000               	dw	0
+    85     00E7  0000               	dw	0
+    86     00E8  0000               	dw	0
+    87     00E9  0000               	dw	0
+    88     00EA  0000               	dw	0
+    89     00EB  0000               	dw	0
+    90     00EC  0000               	dw	0
+    91     00ED  0000               	dw	0
+    92     00EE  0005               	dw	5
+    93     00EF  03E1               	dw	993
+    94     00F0  3C1F               	dw	15391
+    95     00F1  03E1               	dw	993
+    96     00F2  3C1F               	dw	15391
+    97     00F3  01F0               	dw	496
+    98     00F4  3E1F               	dw	15903
+    99     00F5  03E0               	dw	992
+   100     00F6  3E1F               	dw	15903
+   101     00F7  03E1               	dw	993
+   102     00F8  3C1F               	dw	15391
+   103     00F9  0040               	dw	64
+   104     00FA  0000               	dw	0
+   105     00FB  0000               	dw	0
+   106     00FC  0000               	dw	0
+   107     00FD  3800               	dw	14336
+   108     00FE  0000               	dw	0
+   109     00FF                     _end_clb_config:
+
+
+Microchip Technology PIC Macro Assembler V3.00 build 20241204225717 
+Symbol Table                                                                                               Wed Jul 16 22:03:42 2025
+
+  _end_clb_config 00FF  _start_clb_config 0099  

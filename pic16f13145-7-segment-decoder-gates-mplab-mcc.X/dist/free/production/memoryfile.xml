@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <executable name="dist/free/production\pic16f13145-7-segment-decoder-gates-mplab-mcc.X.production.hex">
+    <memory name="program">
+      <units>words</units>
+      <length>8192</length>
+      <used>554</used>
+      <free>7638</free>
+    </memory>
+    <memory name="data">
+      <units>bytes</units>
+      <length>1024</length>
+      <used>26</used>
+      <free>998</free>
+    </memory>
+  </executable>
+</project>
