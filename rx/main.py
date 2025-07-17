@@ -14,7 +14,7 @@ def main():
     frequency = 95.65e6
     sample_rate = 2.048e6
     gain = 10
-    update_interval = 1 / 256
+    update_interval = 1 / 512
     samples_per_read = int(sample_rate * update_interval * 0.95)  # Slightly reduced to avoid overrun
 
     try:
@@ -31,7 +31,6 @@ def main():
         
         # Open file for writing, overriding any existing content
         with open('test.txt', 'w') as f:
-            f.write('0: ')
             while True:
                 loop_start = time.time()
 
@@ -61,7 +60,7 @@ def main():
 
                     if char_count >= 32:
                         print()
-                        f.write('\n0: ')  # Add newline to file as well
+                        
                         char_count = 0
 
                 except Exception as e:
