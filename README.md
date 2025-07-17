@@ -1,4 +1,4 @@
-# Wireless on a budget
+a# Wireless on a budget
 
 This project was built for microchip's configurable logic block design challenge and was published [here](https://maker.pro/configurable-logic-block/projects/wireless-on-a-budget)
 
@@ -39,3 +39,11 @@ that much.
 ### Decoding and receiving
 I used an rtl-sdr and I used a python script (main.py) to read samples at 512hz for 8bps and then convert them to digital 1s or 0s which are written to test.txt for me to open on pulseview using the import digital data or binary data option.
 I can then use the OOK and manchester decoding function that's integrated in pulseview. You could also do this using python directly but then its harder to visualise what's going on. In an earlier commit it did do that though.
+
+## how to use the code
+* sync_sequence : defines the sync sequence default is 0b11111111
+* start_tx : set to 1 to start tx
+* sending_sync : set to 1 when you send sync (otherwise only the txbyte wil be sent upon setting start_tx to 1
+
+If you want to change the bitrate you can do so by changing the high and low bytes of the timer defined as 100hz timer even though its only 16hz by default
+
