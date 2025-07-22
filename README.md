@@ -1,5 +1,8 @@
 # Wireless on a budget
 
+<img width="450" height="338" alt="image" src="https://github.com/user-attachments/assets/37650e0a-0ae2-4813-9e89-89a5c8acd3e6" />
+
+
 This project was built for microchip's configurable logic block design challenge and was published [here](https://maker.pro/configurable-logic-block/projects/wireless-on-a-budget)
 
 It uses a PIC16f13145 curiosity nano dev board which is a dev board for a configurable logic bloc chip.
