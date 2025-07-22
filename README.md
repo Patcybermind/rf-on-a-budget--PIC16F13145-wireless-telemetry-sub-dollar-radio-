@@ -36,9 +36,6 @@ Ideally the wire would be 1/4th the wavelength of the carrier which at around 10
 In my tests i used a 8cm 22awg wire another good thing is that having a short wire will help filter out out of band frequencies such as our original 32mhz signal that creates our 96 mhz harmonic. Though admitedly, at the power level we are transmitting it doesnt matter
 that much.
 
-### Bom:
-22 awg wire, https://www.amazon.ca/CBAZY-Stranded-Flexible-Silicone-Electric/dp/B075M7YZXC/ref=sr_1_3_sspa?crid=1NBOHSU2A4C7J&dib=eyJ2IjoiMSJ9.fYGqqALtUv1-uuvcHoDN2lKq_K_-IL999SKJ8E15-aJormLRSU9BtfHHPmuCLn1yynli8QHyz-lc9EuZ33gtGM-Yamn3ssXeXm3j-n3YUHDgBUWo_y5aSbX_zBnw9ZYHpMZgPQKAIhUKNPH19RIeIW_FQRBaonpHxttHRQprPLTNZYbWj1ypu4bGbZ1s4am7VrNki_U5XX_Uusd-NC1203eL0RsYuvphhO2EQeOIA6fN37WsWM1lMHQXvqs8rDq8Pkt4u5fneqmsUMKFlofQ2MyJGGgpKhLHq64VDiq3FWM.CZ_-0QqHZRrxFm19bgoKfsHjqy5ecA6SUcE87w49Pus&dib_tag=se&keywords=wire&qid=1753209808&sprefix=wire%2Caps%2C215&sr=8-3-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&th=1,
-pic16f13145 curiosity nano dev board, https://www.microchip.com/en-us/development-tool/ev06m52a,
 
 
 ### Decoding and receiving
@@ -51,4 +48,12 @@ I can then use the OOK and manchester decoding function that's integrated in pul
 * sending_sync : set to 1 when you send sync (otherwise only the txbyte wil be sent upon setting start_tx to 1
 
 If you want to change the bitrate you can do so by changing the high and low bytes of the timer defined as 100hz timer even though its only 16hz by default
+
+
+## BOM
+--
+22 awg wire: "https://www.amazon.ca/CBAZY-Stranded-Flexible-Silicone-Electric/dp/B075M7YZXC/ref=sr_1_3_sspa?crid=1NBOHSU2A4C7J&dib=eyJ2IjoiMSJ9.fYGqqALtUv1-uuvcHoDN2lKq_K_-IL999SKJ8E15-aJormLRSU9BtfHHPmuCLn1yynli8QHyz-lc9EuZ33gtGM-Yamn3ssXeXm3j-n3YUHDgBUWo_y5aSbX_zBnw9ZYHpMZgPQKAIhUKNPH19RIeIW_FQRBaonpHxttHRQprPLTNZYbWj1ypu4bGbZ1s4am7VrNki_U5XX_Uusd-NC1203eL0RsYuvphhO2EQeOIA6fN37WsWM1lMHQXvqs8rDq8Pkt4u5fneqmsUMKFlofQ2MyJGGgpKhLHq64VDiq3FWM.CZ_-0QqHZRrxFm19bgoKfsHjqy5ecA6SUcE87w49Pus&dib_tag=se&keywords=wire&qid=1753209808&sprefix=wire%2Caps%2C215&sr=8-3-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&th=1	"
+pic16f13145 curiosity nano dev board: "https://www.microchip.com/en-us/development-tool/ev06m52a	"
+---
+
 
